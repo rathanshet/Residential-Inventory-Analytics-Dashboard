@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Residential Inventory Analytics | SWW Bajaj</title>
+  <meta name="description" content="Premium analytics dashboard for residential inventory distribution across towers, flat types, and floors. SWW Bajaj RERA Area Statement." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ═══════════════════════════ SIDEBAR ═══════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">🏢</div>
+    <div class="logo-text">
+      <span class="logo-title">SWW Bajaj</span>
+      <span class="logo-sub">Inventory Analytics</span>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">DASHBOARD</div>
+    <a class="nav-item active" data-page="summary" id="nav-summary" href="#" onclick="showPage('summary')">
+      <span class="nav-icon">📊</span>
+      <span class="nav-label">Executive Summary</span>
+    </a>
+    <a class="nav-item" data-page="inventory" id="nav-inventory" href="#" onclick="showPage('inventory')">
+      <span class="nav-icon">🏗️</span>
+      <span class="nav-label">Inventory Analysis</span>
+    </a>
+    <a class="nav-item" data-page="area" id="nav-area" href="#" onclick="showPage('area')">
+      <span class="nav-icon">📐</span>
+      <span class="nav-label">Area Analysis</span>
+    </a>
+    <div class="nav-section-label">TOOLS</div>
+    <a class="nav-item" data-page="sql" id="nav-sql" href="#" onclick="showPage('sql')">
+      <span class="nav-icon">💾</span>
+      <span class="nav-label">SQL Console</span>
+    </a>
+    <a class="nav-item" data-page="dax" id="nav-dax" href="#" onclick="showPage('dax')">
+      <span class="nav-icon">📐</span>
+      <span class="nav-label">DAX Measures</span>
+    </a>
+    <a class="nav-item" data-page="etl" id="nav-etl" href="#" onclick="showPage('etl')">
+      <span class="nav-icon">⚙️</span>
+      <span class="nav-label">Data Cleaning</span>
+    </a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="db-status" id="db-status">
+      <span class="status-dot"></span>
+      <span class="status-text">Connecting…</span>
+    </div>
+    <div class="data-info" id="data-info">272 Units · 6 Towers</div>
+  </div>
+</aside>
+
+<!-- ═══════════════════════════ TOPBAR ═══════════════════════════ -->
+<div class="topbar">
+  <button class="menu-toggle" id="menu-toggle" onclick="toggleSidebar()">☰</button>
+  <div class="topbar-breadcrumb" id="topbar-breadcrumb">Executive Summary</div>
+  <div class="topbar-right">
+    <div class="live-badge"><span class="pulse"></span> Live Data</div>
+    <div class="topbar-date" id="topbar-date"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════ MAIN CONTENT ═══════════════════════════ -->
+<main class="main-content">
+
+  <!-- ─────────────── PAGE 1: EXECUTIVE SUMMARY ─────────────── -->
+  <section class="page active" id="page-summary">
+    <div class="page-header">
+      <h1 class="page-title">Executive Summary</h1>
+      <p class="page-subtitle">High-level overview of the entire residential inventory</p>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid" id="kpi-grid">
+      <div class="kpi-card" id="kpi-units">
+        <div class="kpi-icon">🏠</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kpi-total-units">—</div>
+          <div class="kpi-label">Total Units</div>
+          <div class="kpi-sub" id="kpi-units-sub">Across 6 towers</div>
+        </div>
+        <div class="kpi-sparkline"></div>
+      </div>
+      <div class="kpi-card accent-green" id="kpi-sba">
+        <div class="kpi-icon">📏</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kpi-total-sba">—</div>
+          <div class="kpi-label">Total Saleable Area</div>
+          <div class="kpi-sub">Square Feet</div>
+        </div>
+      </div>
+      <div class="kpi-card accent-blue" id="kpi-carpet">
+        <div class="kpi-icon">🛋️</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kpi-avg-carpet">—</div>
+          <div class="kpi-label">Avg Carpet Area</div>
+          <div class="kpi-sub">Per Unit (SFT)</div>
+        </div>
+      </div>
+      <div class="kpi-card accent-amber" id="kpi-garden">
+        <div class="kpi-icon">🌿</div>
+        <div class="kpi-body">
+          <div class="kpi-value" id="kpi-total-garden">—</div>
+          <div class="kpi-label">Total Private Garden</div>
+          <div class="kpi-sub">Ground Floor Only</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="charts-row">
+      <div class="chart-card wide">
+        <div class="chart-header">
+          <div class="chart-title">Units by Tower</div>
+          <div class="chart-badge">Inventory Count</div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-units-tower"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Flat Type Mix</div>
+          <div class="chart-badge">Category Split</div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-type-donut"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Floor Distribution</div>
+          <div class="chart-badge">Units per Floor</div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-floor-dist"></canvas>
+        </div>
+      </div>
+      <div class="chart-card wide">
+        <div class="chart-header">
+          <div class="chart-title">Total SBA by Tower</div>
+          <div class="chart-badge">Sq Ft</div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-sba-tower"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────── PAGE 2: INVENTORY ANALYSIS ─────────────── -->
+  <section class="page" id="page-inventory">
+    <div class="page-header">
+      <h1 class="page-title">Inventory Analysis</h1>
+      <p class="page-subtitle">Deep dive into unit counts, flat types, and floor-wise distribution</p>
+    </div>
+
+    <!-- Tower × Category Matrix -->
+    <div class="charts-row">
+      <div class="chart-card full">
+        <div class="chart-header">
+          <div class="chart-title">Tower × Flat Type Matrix</div>
+          <div class="chart-badge">Stacked Count</div>
+        </div>
+        <div class="chart-body tall">
+          <canvas id="chart-tower-type-matrix"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Average SBA by Category -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Avg SBA by Flat Category</div>
+          <div class="chart-badge">SFT</div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-avg-sba-cat"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Floor-wise Unit Count</div>
+          <div class="chart-badge">Horizontal Bar</div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-floor-horiz"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Table -->
+    <div class="table-card">
+      <div class="chart-header">
+        <div class="chart-title">Flat Category Statistics</div>
+        <div class="chart-badge">Summary Table</div>
+      </div>
+      <div class="table-wrapper" id="inv-table-wrapper">
+        <table class="data-table" id="inv-stats-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Units</th>
+              <th>Avg SBA (SFT)</th>
+              <th>Avg Carpet (SFT)</th>
+              <th>Total SBA (SFT)</th>
+              <th>SBA Share %</th>
+            </tr>
+          </thead>
+          <tbody id="inv-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────── PAGE 3: AREA ANALYSIS ─────────────── -->
+  <section class="page" id="page-area">
+    <div class="page-header">
+      <h1 class="page-title">Area Analysis</h1>
+      <p class="page-subtitle">SBA vs Carpet breakdown, balcony and common area contributions, and garden analysis</p>
+    </div>
+
+    <!-- Area Contribution KPIs -->
+    <div class="contrib-grid" id="contrib-grid">
+      <div class="contrib-card carpet">
+        <div class="contrib-pct" id="c-carpet-pct">—%</div>
+        <div class="contrib-label">Carpet Area</div>
+        <div class="contrib-avg" id="c-carpet-avg">Avg: — SFT</div>
+        <div class="contrib-bar"><div class="contrib-fill" id="c-carpet-bar"></div></div>
+      </div>
+      <div class="contrib-card balcony">
+        <div class="contrib-pct" id="c-balcony-pct">—%</div>
+        <div class="contrib-label">Balcony Area</div>
+        <div class="contrib-avg" id="c-balcony-avg">Avg: — SFT</div>
+        <div class="contrib-bar"><div class="contrib-fill" id="c-balcony-bar"></div></div>
+      </div>
+      <div class="contrib-card common">
+        <div class="contrib-pct" id="c-common-pct">—%</div>
+        <div class="contrib-label">Common Area</div>
+        <div class="contrib-avg" id="c-common-avg">Avg: — SFT</div>
+        <div class="contrib-bar"><div class="contrib-fill" id="c-common-bar"></div></div>
+      </div>
+      <div class="contrib-card wall">
+        <div class="contrib-pct" id="c-wall-pct">—%</div>
+        <div class="contrib-label">Wall Area</div>
+        <div class="contrib-avg" id="c-wall-avg">Avg: — SFT</div>
+        <div class="contrib-bar"><div class="contrib-fill" id="c-wall-bar"></div></div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">SBA vs Carpet Area by Tower</div>
+          <div class="chart-badge">Comparison</div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-sba-carpet"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Area Composition by Flat Type</div>
+          <div class="chart-badge">Stacked Bar</div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-area-composition"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Private Garden by Tower</div>
+          <div class="chart-badge">Ground Floor Units</div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-garden-tower"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Balcony Contribution %</div>
+          <div class="chart-badge">By Category</div>
+        </div>
+        <div class="chart-body">
+          <canvas id="chart-balcony-contrib"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Garden Table -->
+    <div class="table-card">
+      <div class="chart-header">
+        <div class="chart-title">Private Garden Allocation Analysis</div>
+        <div class="chart-badge">Ground Floor Only</div>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Tower</th>
+              <th>Units w/ Garden</th>
+              <th>Total Garden (SFT)</th>
+              <th>Avg Garden (SFT)</th>
+              <th>Min Garden (SFT)</th>
+              <th>Max Garden (SFT)</th>
+            </tr>
+          </thead>
+          <tbody id="garden-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────── PAGE 4: SQL CONSOLE ─────────────── -->
+  <section class="page" id="page-sql">
+    <div class="page-header">
+      <h1 class="page-title">SQL Console</h1>
+      <p class="page-subtitle">Write custom queries against the live inventory database</p>
+    </div>
+
+    <div class="sql-layout">
+      <div class="sql-panel">
+        <div class="sql-editor-header">
+          <span class="sql-title">Query Editor</span>
+          <div class="sql-actions">
+            <button class="sql-btn" id="sql-run-btn" onclick="runSqlQuery()">▶ Run</button>
+            <button class="sql-btn secondary" onclick="clearSql()">✕ Clear</button>
+          </div>
+        </div>
+        <textarea class="sql-textarea" id="sql-input" placeholder="SELECT * FROM inventory LIMIT 10;" spellcheck="false"></textarea>
+        <div class="sql-quick-queries">
+          <span class="quick-label">Quick:</span>
+          <button class="quick-btn" onclick="setQuery('SELECT TOWER, COUNT(*) as Units, SUM(SBA_SFT) as Total_SBA FROM inventory GROUP BY TOWER ORDER BY TOWER')">Units by Tower</button>
+          <button class="quick-btn" onclick="setQuery('SELECT CATEGORY, COUNT(*) as Units, ROUND(AVG(SBA_SFT),0) as Avg_SBA FROM inventory GROUP BY CATEGORY ORDER BY Avg_SBA DESC')">Avg SBA by Type</button>
+          <button class="quick-btn" onclick="setQuery('SELECT FLOOR, COUNT(*) as Units FROM inventory GROUP BY FLOOR ORDER BY FLOOR_ORDER')">Floor Distribution</button>
+          <button class="quick-btn" onclick="setQuery('SELECT TOWER, FLAT_NO, TYPE, PRIVATE_GARDEN_SFT FROM inventory WHERE HAS_GARDEN = 1 ORDER BY PRIVATE_GARDEN_SFT DESC')">Garden Units</button>
+          <button class="quick-btn" onclick="setQuery('SELECT CATEGORY, ROUND(AVG(CARPET_SFT),0) as Avg_Carpet, ROUND(AVG(BALCONY_SFT),0) as Avg_Balcony, ROUND(AVG(COMMON_SFT),0) as Avg_Common FROM inventory GROUP BY CATEGORY')">Area Breakdown</button>
+        </div>
+      </div>
+
+      <div class="sql-results-panel">
+        <div class="sql-editor-header">
+          <span class="sql-title">Results</span>
+          <span class="sql-row-count" id="sql-row-count"></span>
+        </div>
+        <div class="sql-results" id="sql-results">
+          <div class="sql-placeholder">Run a query to see results here…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Schema Helper -->
+    <div class="schema-card">
+      <div class="chart-header">
+        <div class="chart-title">📋 Database Schema — inventory table</div>
+      </div>
+      <div class="schema-cols" id="schema-cols">Loading schema…</div>
+    </div>
+  </section>
+
+  <!-- ─────────────── PAGE 5: DAX MEASURES ─────────────── -->
+  <section class="page" id="page-dax">
+    <div class="page-header">
+      <h1 class="page-title">DAX Measures</h1>
+      <p class="page-subtitle">Power BI DAX formulas equivalent to the SQL analytics in this dashboard</p>
+    </div>
+
+    <div class="dax-grid">
+      <div class="dax-card">
+        <div class="dax-category">📊 Executive Summary</div>
+        <div class="dax-item">
+          <div class="dax-name">Total Units</div>
+          <pre class="dax-code">Total Units = COUNTROWS(inventory)</pre>
+        </div>
+        <div class="dax-item">
+          <div class="dax-name">Total Saleable Area</div>
+          <pre class="dax-code">Total SBA = SUM(inventory[SBA_SFT])</pre>
+        </div>
+        <div class="dax-item">
+          <div class="dax-name">Average Carpet Area</div>
+          <pre class="dax-code">Avg Carpet Area = AVERAGE(inventory[CARPET_SFT])</pre>
+        </div>
+        <div class="dax-item">
+          <div class="dax-name">Total Private Garden Area</div>
+          <pre class="dax-code">Total Garden = SUM(inventory[PRIVATE_GARDEN_SFT])</pre>
+        </div>
+      </div>
+
+      <div class="dax-card">
+        <div class="dax-category">🏗️ Inventory Analysis</div>
+        <div class="dax-item">
+          <div class="dax-name">Units by Tower</div>
+          <pre class="dax-code">Units by Tower = 
+CALCULATE(
+  COUNTROWS(inventory),
+  ALLEXCEPT(inventory, inventory[TOWER])
+)</pre>
+        </div>
+        <div class="dax-item">
+          <div class="dax-name">Average SBA by Flat Type</div>
+          <pre class="dax-code">Avg SBA by Type = 
+AVERAGEX(
+  SUMMARIZE(inventory, inventory[CATEGORY]),
+  CALCULATE(AVERAGE(inventory[SBA_SFT]))
+)</pre>
+        </div>
+        <div class="dax-item">
+          <div class="dax-name">Floor Distribution</div>
+          <pre class="dax-code">Units per Floor = 
+CALCULATE(
+  COUNTROWS(inventory),
+  ALLEXCEPT(inventory, inventory[FLOOR])
+)</pre>
+        </div>
+      </div>
+
+      <div class="dax-card">
+        <div class="dax-category">📐 Area Analysis</div>
+        <div class="dax-item">
+          <div class="dax-name">Carpet Area %</div>
+          <pre class="dax-code">Carpet Ratio = 
+DIVIDE(
+  SUM(inventory[CARPET_SFT]),
+  SUM(inventory[SBA_SFT])
+) * 100</pre>
+        </div>
+        <div class="dax-item">
+          <div class="dax-name">Balcony Contribution %</div>
+          <pre class="dax-code">Balcony Ratio = 
+DIVIDE(
+  SUM(inventory[BALCONY_SFT]),
+  SUM(inventory[SBA_SFT])
+) * 100</pre>
+        </div>
+        <div class="dax-item">
+          <div class="dax-name">Common Area %</div>
+          <pre class="dax-code">Common Ratio = 
+DIVIDE(
+  SUM(inventory[COMMON_SFT]),
+  SUM(inventory[SBA_SFT])
+) * 100</pre>
+        </div>
+      </div>
+
+      <div class="dax-card">
+        <div class="dax-category">🌿 Garden Analysis</div>
+        <div class="dax-item">
+          <div class="dax-name">Units with Private Garden</div>
+          <pre class="dax-code">Garden Units = 
+CALCULATE(
+  COUNTROWS(inventory),
+  inventory[HAS_GARDEN] = TRUE()
+)</pre>
+        </div>
+        <div class="dax-item">
+          <div class="dax-name">Average Garden per Unit</div>
+          <pre class="dax-code">Avg Garden = 
+CALCULATE(
+  AVERAGE(inventory[PRIVATE_GARDEN_SFT]),
+  inventory[HAS_GARDEN] = TRUE()
+)</pre>
+        </div>
+        <div class="dax-item">
+          <div class="dax-name">Garden Penetration %</div>
+          <pre class="dax-code">Garden Penetration = 
+DIVIDE(
+  CALCULATE(COUNTROWS(inventory), inventory[HAS_GARDEN] = TRUE()),
+  CALCULATE(COUNTROWS(inventory), inventory[IS_GROUND] = TRUE())
+) * 100</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────── PAGE 6: DATA CLEANING ─────────────── -->
+  <section class="page" id="page-etl">
+    <div class="page-header">
+      <h1 class="page-title">Data Cleaning Pipeline</h1>
+      <p class="page-subtitle">ETL process applied to the raw RERA Excel area statement</p>
+    </div>
+
+    <div class="etl-steps">
+      <div class="etl-step">
+        <div class="step-num">01</div>
+        <div class="step-body">
+          <div class="step-title">Raw Data Extraction</div>
+          <div class="step-desc">Read the "AREA statement" sheet from the Excel file using <code>pandas.read_excel()</code>. The first row is blank, row 2 contains column headers, and data begins from row 3.</div>
+        </div>
+      </div>
+      <div class="etl-step">
+        <div class="step-num">02</div>
+        <div class="step-body">
+          <div class="step-title">Floor Column Forward-Fill</div>
+          <div class="step-desc">The <code>FLOOR</code> column is only populated at the start of each floor section. Applied <code>ffill()</code> to propagate floor values downward across all rows in that section.</div>
+          <pre class="etl-code">data_df['FLOOR'] = data_df['FLOOR'].ffill()</pre>
+        </div>
+      </div>
+      <div class="etl-step">
+        <div class="step-num">03</div>
+        <div class="step-body">
+          <div class="step-title">Row Filtering</div>
+          <div class="step-desc">Dropped rows where the <code>SL_NO</code> column is null — these correspond to blank rows at the bottom of the sheet, not real units.</div>
+          <pre class="etl-code">data_df = data_df[data_df['SL_NO'].notnull()]</pre>
+        </div>
+      </div>
+      <div class="etl-step">
+        <div class="step-num">04</div>
+        <div class="step-body">
+          <div class="step-title">Floor Normalization</div>
+          <div class="step-desc">Standardized raw floor values: <code>"G "</code> (with trailing space) → <code>"G"</code>, and integer floors (1–10) left as strings.</div>
+          <pre class="etl-code">def normalize_floor(f):
+    f_str = str(f).strip()
+    return 'G' if f_str.upper().startswith('G') else str(int(float(f_str)))</pre>
+        </div>
+      </div>
+      <div class="etl-step">
+        <div class="step-num">05</div>
+        <div class="step-body">
+          <div class="step-title">Private Garden Null Handling</div>
+          <div class="step-desc">The <code>PRIVATE_GARDEN_SFT</code> column is only populated for ground floor units. All upper-floor NaN values filled with <code>0</code> (no garden) instead of being left as missing.</div>
+          <pre class="etl-code">data_df['PRIVATE_GARDEN_SFT'] = data_df['PRIVATE_GARDEN_SFT'].fillna(0)</pre>
+        </div>
+      </div>
+      <div class="etl-step">
+        <div class="step-num">06</div>
+        <div class="step-body">
+          <div class="step-title">Category Feature Engineering</div>
+          <div class="step-desc">The raw <code>TYPE</code> column contains values like <code>"C 3B2T_TYPE 1-A"</code>. Extracted a simplified <code>CATEGORY</code> field (2B2T, 3B2T, 3B3T, 4B4T) and a <code>BASE_TYPE</code> stripping the -A/-B floor variant suffix.</div>
+          <pre class="etl-code">data_df['CATEGORY'] = data_df['TYPE'].apply(get_category)
+data_df['BASE_TYPE'] = data_df['TYPE'].str[:-2]</pre>
+        </div>
+      </div>
+      <div class="etl-step">
+        <div class="step-num">07</div>
+        <div class="step-body">
+          <div class="step-title">Derived Metrics</div>
+          <div class="step-desc">Computed ratio columns for Carpet, Balcony, Wall, and Common area as percentages of SBA. Added boolean flags <code>IS_GROUND</code> and <code>HAS_GARDEN</code>.</div>
+          <pre class="etl-code">data_df['CARPET_RATIO'] = (data_df['CARPET_SFT'] / data_df['SBA_SFT'] * 100).round(2)
+data_df['IS_GROUND'] = data_df['FLOOR'] == 'G'
+data_df['HAS_GARDEN'] = data_df['PRIVATE_GARDEN_SFT'] > 0</pre>
+        </div>
+      </div>
+      <div class="etl-step">
+        <div class="step-num">08</div>
+        <div class="step-body">
+          <div class="step-title">SQLite Load + Views</div>
+          <div class="step-desc">Loaded the cleaned 272-row DataFrame into <code>inventory.db</code> and created four SQL views: <code>v_tower_summary</code>, <code>v_floor_summary</code>, <code>v_category_summary</code>, and <code>v_garden_analysis</code>.</div>
+          <pre class="etl-code">data_df.to_sql('inventory', conn, if_exists='replace', index=False)
+conn.execute("CREATE VIEW v_tower_summary AS ...")</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="etl-result-card">
+      <div class="etl-result-grid">
+        <div class="etl-stat"><span class="etl-stat-val">272</span><span class="etl-stat-lbl">Clean Records</span></div>
+        <div class="etl-stat"><span class="etl-stat-val">6</span><span class="etl-stat-lbl">Towers</span></div>
+        <div class="etl-stat"><span class="etl-stat-val">11</span><span class="etl-stat-lbl">Floors (G–10)</span></div>
+        <div class="etl-stat"><span class="etl-stat-val">4</span><span class="etl-stat-lbl">Flat Categories</span></div>
+        <div class="etl-stat"><span class="etl-stat-val">0</span><span class="etl-stat-lbl">Null SBA Rows</span></div>
+        <div class="etl-stat"><span class="etl-stat-val">4</span><span class="etl-stat-lbl">SQL Views</span></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
