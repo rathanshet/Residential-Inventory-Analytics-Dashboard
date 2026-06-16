@@ -1,5 +1,7 @@
 # 🏢 Residential Inventory Analytics Dashboard
 
+🚀 **[Live Demo on Render](https://residential-inventory-analytics-dashboard.onrender.com)**
+
 A premium, glassmorphic dark-themed real estate analytics dashboard designed for developers to analyze residential inventory distribution across towers, floors, and flat categories. Powered by a Python ETL pipeline, a SQLite database, a Node.js/Express backend, and a modern vanilla HTML/CSS/JS frontend.
 
 ---
