@@ -4,7 +4,7 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-const PORT = 3737;
+const PORT = process.env.PORT || 3737;
 const DB_PATH = path.join(__dirname, 'inventory.db');
 
 app.use(cors());
